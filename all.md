@@ -2,9 +2,14 @@
 
 > Senior Backend Engineer — Node.js, TypeScript, AWS
 
+**Legend:**
+
+- ✅ PRACTICED — exercised and understood
+- ⚠️ STILL TO PRACTICE — read and understand, but practice when possible
+
 ---
 
-# PART 1: ARRAY METHODS
+# PART 1: ARRAY METHODS ✅
 
 ## filter, map, sort, find, findIndex, slice
 
@@ -18,17 +23,17 @@ const products = [
 
 // filter + sort + map — chain them
 const result = products
-  .filter((p) => p.inStock) // keep only inStock
+  .filter((p) => p.inStock) // keep only inStock items
   .sort((a, b) => b.price - a.price) // sort descending (b - a = big first)
   .map((p) => p.name); // extract names only
 
-// find — returns the element
+// find — returns the element (or undefined)
 const laptop = products.find((p) => p.name === "Laptop");
 
 // findIndex — returns the index (same callback as find!)
 const index = products.findIndex((p) => p.name === "Laptop");
 
-// slice — returns copy without modifying original
+// slice — returns a copy without modifying original
 const withoutFirstAndLast = products.slice(1, products.length - 1);
 ```
 
@@ -41,7 +46,7 @@ const withoutFirstAndLast = products.slice(1, products.length - 1);
 
 ---
 
-## reduce — the most powerful array method
+## reduce — the most powerful array method ✅
 
 ```javascript
 const orders = [
@@ -51,18 +56,23 @@ const orders = [
 ];
 
 // 1. Sum of numbers
+// acc = accumulator (running total), starts at 0
 const total = orders.reduce((acc, o) => acc + o.total, 0);
-// acc = accumulator (starts at 0), o = current item
+// 150 → 450 → 900 → result: 900... wait only completed:
+const completedTotal = orders
+  .filter((o) => o.status === "completed")
+  .reduce((acc, o) => acc + o.total, 0); // 600
 
 // 2. Array to object (key = id, value = total)
 const byId = orders.reduce((acc, o) => {
-  acc[o.id] = o.total;
-  return acc;
-}, {}); // initial value is {}
+  acc[o.id] = o.total; // add to accumulator object
+  return acc; // always return acc!
+}, {}); // initial value is empty object
+// { 1: 150, 2: 300, 3: 450 }
 
 // 3. Group by property ⭐ (very common at interviews)
 const grouped = orders.reduce((acc, o) => {
-  if (!acc[o.status]) acc[o.status] = []; // initialize array if not exists
+  if (!acc[o.status]) acc[o.status] = []; // create array if first time seeing this key
   acc[o.status].push(o.total);
   return acc;
 }, {});
@@ -71,7 +81,7 @@ const grouped = orders.reduce((acc, o) => {
 // 4. Count occurrences
 const roles = ["admin", "user", "admin", "user", "admin"];
 const count = roles.reduce((acc, role) => {
-  acc[role] = (acc[role] || 0) + 1; // increment or start at 0
+  acc[role] = (acc[role] || 0) + 1; // if key exists increment, else start at 0
   return acc;
 }, {});
 // { admin: 3, user: 2 }
@@ -90,7 +100,7 @@ const flat = nested.reduce((acc, arr) => [...acc, ...arr], []);
 
 ---
 
-# PART 2: OBJECT ITERATION
+# PART 2: OBJECT ITERATION ✅
 
 ```javascript
 const scores = { alice: 60, bob: 20, carol: 1000 };
@@ -104,15 +114,15 @@ Object.keys(scores).forEach((key) => console.log(key));
 // Just values
 Object.values(scores).forEach((value) => console.log(value));
 
-// Keys AND values — most useful
+// Keys AND values — most useful ⭐
 for (const [key, value] of Object.entries(scores)) {
   console.log(key, value); // 'alice' 60, 'bob' 20, ...
 }
 
-// Transform object → array of objects
+// Transform object → array of objects (then you can sort, filter, etc)
 const arr = Object.entries(scores)
-  .map(([name, score]) => ({ name, score }))
-  .sort((a, b) => b.score - a.score); // sort descending
+  .map(([name, score]) => ({ name, score })) // destructure [key, value]
+  .sort((a, b) => b.score - a.score);
 // [{ name: 'carol', score: 1000 }, { name: 'alice', score: 60 }, ...]
 
 // Transform array → object
@@ -135,20 +145,21 @@ const highScores = Object.fromEntries(
 
 ---
 
-# PART 3: ASYNC / AWAIT + PROMISES
+# PART 3: ASYNC / AWAIT + PROMISES ✅
 
 ## Basic async/await with error handling
 
 ```javascript
 async function getUserWithOrders(userId) {
   try {
-    const user = await getUser(userId); // await each call
-    const orders = await getOrders(userId); // sequential — one after the other
+    const user = await getUser(userId); // sequential — waits before next line
+    const orders = await getOrders(userId); // only runs after user is fetched
     return { user, orders };
   } catch (err) {
+    // err is 'unknown' in strict TypeScript — must check type
     if (err instanceof Error)
-      throw err; // re-throw with original stack
-    else throw new Error(`${err}`); // wrap unknown errors
+      throw err; // re-throw with original stack trace
+    else throw new Error(`${err}`); // wrap unknown errors in Error object
   }
 }
 ```
@@ -156,17 +167,19 @@ async function getUserWithOrders(userId) {
 ## Promise.all — parallel execution
 
 ```javascript
-// ❌ Sequential — slow (waits for each one)
+// ❌ Sequential — slow (each waits for the previous)
 for (const id of ids) {
-  const user = await getUser(id); // waits before starting next
+  const user = await getUser(id); // total time = sum of all requests
 }
 
 // ✅ Parallel — fast (all run at the same time)
+// total time = slowest single request
 async function getAllUsersWithOrders(ids) {
   try {
     return await Promise.all(
-      // don't forget return!
+      // ⚠️ don't forget 'return'!
       ids.map(async (id) => {
+        // map returns array of Promises
         const user = await getUser(id);
         const orders = await getOrders(id);
         return { user, orders };
@@ -177,17 +190,21 @@ async function getAllUsersWithOrders(ids) {
     else throw new Error(`${err}`);
   }
 }
-// throws if ANY promise fails
+// throws if ANY promise fails — all or nothing
 ```
 
 ## Promise.allSettled — never throws
 
 ```javascript
 async function fetchAll(urls) {
-  const results = await Promise.allSettled(urls.map((url) => fetchUrl(url)));
+  const results = await Promise.allSettled(
+    // never throws, always resolves
+    urls.map((url) => fetchUrl(url)),
+  );
 
-  // allSettled returns: { status: 'fulfilled', value: ... }
-  //                 or: { status: 'rejected', reason: ... }
+  // allSettled returns one of:
+  // { status: 'fulfilled', value: ... }  ← success
+  // { status: 'rejected', reason: ... }  ← failure
   return results.map((result) => {
     if (result.status === "fulfilled") {
       return { status: "success", data: result.value };
@@ -196,7 +213,6 @@ async function fetchAll(urls) {
     }
   });
 }
-// NEVER throws — returns results for ALL urls
 ```
 
 ## Promise comparison
@@ -204,39 +220,46 @@ async function fetchAll(urls) {
 ```javascript
 Promise.all([p1, p2, p3]);
 // ✅ all succeed → [result1, result2, result3]
-// ❌ any fails → throws immediately
+// ❌ any fails → throws immediately (fail fast)
+// Use when: you need ALL results and any failure should abort
 
 Promise.allSettled([p1, p2, p3]);
-// always returns all results, never throws
+// always resolves with all results, never throws
 // [{ status: 'fulfilled'|'rejected', value|reason }]
+// Use when: you want results regardless of individual failures
 
 Promise.race([p1, p2, p3]);
-// returns/throws FIRST to finish (success OR failure)
+// resolves/rejects with FIRST to finish (success OR failure)
+// Use when: timeout patterns
 
 Promise.any([p1, p2, p3]);
-// returns FIRST success, ignores individual failures
+// resolves with FIRST success, ignores individual failures
 // throws only if ALL fail
+// Use when: trying multiple sources, first success wins
 ```
 
 ---
 
-# PART 4: TYPESCRIPT GENERICS
+# PART 4: TYPESCRIPT GENERICS ✅
 
 ```typescript
-// Basic generic — T is declared after function name
+// T is a type variable — declared after the function name
+// TypeScript infers T from the arguments you pass
 function getFirstOrDefault<T>(arr: T[], defaultValue: T): T {
-  return arr[0] ?? defaultValue; // ?? = nullish coalescing
+  return arr[0] ?? defaultValue; // ?? = return left side unless null/undefined
 }
 
-getFirstOrDefault([1, 2, 3], 0); // returns 1
-getFirstOrDefault([], 0); // returns 0
-getFirstOrDefault(["a", "b"], "x"); // returns 'a'
-getFirstOrDefault([], "x"); // returns 'x'
+getFirstOrDefault([1, 2, 3], 0); // T = number, returns 1
+getFirstOrDefault([], 0); // T = number, returns 0
+getFirstOrDefault(["a", "b"], "x"); // T = string, returns 'a'
 
-// Generic with constraint
+// Generic with constraint — K must be a key of T
 function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
   return obj[key];
 }
+const user = { name: "Alice", age: 28 };
+getProperty(user, "name"); // ✅ TypeScript knows this returns string
+getProperty(user, "foo"); // 💥 Error — 'foo' is not a key of user
 ```
 
 **Key rules:**
@@ -244,11 +267,11 @@ function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
 - `<T>` goes AFTER the function name: `function fn<T>(...)`
 - Use `T` as type for params and return value
 - Don't make it `async` if there's no `await` inside
-- Don't use `<T>[]` — the correct syntax is `T[]`
+- Correct syntax: `T[]` not `<T>[]`
 
 ---
 
-# PART 5: TYPESCRIPT UTILITY TYPES
+# PART 5: TYPESCRIPT UTILITY TYPES ✅
 
 ```typescript
 interface User {
@@ -260,7 +283,7 @@ interface User {
   role: "admin" | "user";
 }
 
-// Partial — all fields become optional
+// Partial — all fields become optional (useful for update endpoints)
 type UpdateUser = Partial<User>;
 // { id?: number, name?: string, email?: string, ... }
 
@@ -272,9 +295,9 @@ type PublicUser = Pick<User, "id" | "name" | "role">;
 type PrivateUser = Omit<User, "password">;
 // everything EXCEPT password
 
-// Record — typed key-value object
+// Record — typed key-value map
 type UserMap = Record<string, User>;
-// { [key: string]: User }
+// equivalent to: { [key: string]: User }
 
 // Combining utility types
 type UpdatePublicUser = Partial<Pick<User, "name" | "email">>;
@@ -284,13 +307,13 @@ type UpdatePublicUser = Partial<Pick<User, "name" | "email">>;
 **Key rule:** Always use `type`, NOT `interface`, for utility types!
 
 ```typescript
-type UpdateUser = Partial<User>;     // ✅
-interface UpdateUser = Partial<User> // ❌ syntax error
+type UpdateUser = Partial<User>;      // ✅
+interface UpdateUser = Partial<User>  // ❌ syntax error
 ```
 
 ---
 
-# PART 6: COMMON PATTERNS
+# PART 6: COMMON PATTERNS ✅
 
 ## Retry mechanism
 
@@ -298,53 +321,47 @@ interface UpdateUser = Partial<User> // ❌ syntax error
 // Option 1 — Recursion (elegant, short)
 async function retry(fn, times) {
   try {
-    return await fn(); // attempt — return immediately if success
+    return await fn(); // attempt — if success, returns immediately
   } catch (err) {
-    if (times <= 1) throw err; // no retries left
-    return retry(fn, times - 1); // recurse with one less attempt
+    if (times <= 1) throw err; // no more attempts — throw last error
+    return retry(fn, times - 1); // recurse with one fewer attempt
   }
 }
 
-// Option 2 — Loop (explicit, easier to extend)
+// Option 2 — Loop (explicit, easier to extend with delay/logging)
 async function retry(fn, times, delayMs = 0) {
   let lastError;
   for (let i = 0; i < times; i++) {
     try {
-      return await fn(); // return immediately if success
+      return await fn(); // if success, exit immediately
     } catch (err) {
-      lastError = err;
-      // optional delay between retries
+      lastError = err; // save error, try again on next iteration
       if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
     }
   }
-  throw lastError; // all attempts failed
+  throw lastError; // all attempts failed — throw the last error
 }
 
 // Usage
 const result = await retry(flakyApiCall, 3);
-const result2 = await retry(flakyApiCall, 3, 1000); // with 1s delay
+const result2 = await retry(flakyApiCall, 3, 1000); // with 1s delay between retries
 ```
-
-**When to use which:**
-
-- Recursion → short and elegant, fine for most cases
-- Loop → when you need delay between retries, logging, or more control
 
 ---
 
-## Cache with TTL (Time To Live)
+## Cache with TTL (Time To Live) ✅
 
 ```javascript
 class Cache {
   constructor() {
-    // store = { key: { value, expiresAt } }
-    this.store = {};
+    // each entry stores value AND when it expires
+    this.store = {}; // { key: { value, expiresAt } }
   }
 
   set(key, value, ttlMs) {
     this.store[key] = {
       value,
-      expiresAt: Date.now() + ttlMs, // timestamp when it expires
+      expiresAt: Date.now() + ttlMs, // current time + duration = expiry timestamp
     };
   }
 
@@ -352,50 +369,45 @@ class Cache {
     const entry = this.store[key];
     if (!entry) return null; // key doesn't exist
     if (Date.now() > entry.expiresAt) {
-      // expired
-      delete this.store[key]; // cleanup expired entry
+      // current time is past expiry
+      delete this.store[key]; // clean up expired entry
       return null;
     }
     return entry.value;
   }
 
   delete(key) {
-    delete this.store[key]; // for plain objects use delete keyword
-    // NOTE: map.delete(key) is for Map — not for plain objects!
+    delete this.store[key]; // plain objects use 'delete' keyword
+    // ⚠️ map.delete(key) is for Map instances — NOT plain objects
   }
 
   clear() {
-    this.store = {}; // reset entire store
+    this.store = {}; // reset entire cache
   }
 }
-
-// Usage
-const cache = new Cache();
-cache.set("user:1", { name: "Alice" }, 5000); // expires in 5 seconds
-cache.get("user:1"); // { name: 'Alice' }
-// after 5 seconds:
-cache.get("user:1"); // null
 ```
 
 ---
 
-## Flatten nested object (recursion)
+## Flatten nested object (recursion) ✅
 
 ```javascript
+// Problem: nested objects → flat object with dot-notation keys
 // Input:  { address: { city: 'Bucharest', coords: { lat: 44.4 } } }
 // Output: { 'address.city': 'Bucharest', 'address.coords.lat': 44.4 }
 
 function flattenObject(obj, prefix = "") {
   return Object.entries(obj).reduce((acc, [key, value]) => {
-    // build the new key — join with dot if prefix exists
+    // build new key — join with dot only if there's a prefix
     const newKey = prefix ? `${prefix}.${key}` : key;
 
     if (typeof value === "object" && value !== null) {
-      // it's an object — recurse deeper with the new prefix
-      // Object.assign merges the recursive result into acc
+      // it's a nested object — go deeper (recursion)
+      // prefix becomes 'address', then 'address.coords', etc.
+      // Object.assign copies recursive results into our accumulator
       Object.assign(acc, flattenObject(value, newKey));
     } else {
-      // it's a primitive — add it directly
+      // it's a primitive (string, number, boolean) — add directly
       acc[newKey] = value;
     }
 
@@ -403,31 +415,33 @@ function flattenObject(obj, prefix = "") {
   }, {});
 }
 
-// Why typeof value === 'object' && value !== null?
-// typeof null === 'object' in JavaScript — it's a known bug
-// so we must explicitly check value !== null
+// Why `typeof value === 'object' && value !== null`?
+// In JavaScript: typeof null === 'object' (historical bug!)
+// So we must explicitly exclude null
 ```
 
 **When to think about recursion:**
 
-- Nested structures of unknown depth ← this exact case
+- Nested structures of unknown depth ← this exact pattern
 - Tree traversal
-- "Flatten" anything nested
+- Any "flatten" problem
 
 ---
 
-## Debounce
+## Debounce ✅
 
 ```javascript
+// Debounce delays execution and resets timer on each call
+// Only fires after the user stops calling it for `delay` ms
 function debounce(fn, delay) {
-  let timer; // lives in closure — persists between calls
+  let timer; // closure variable — persists between calls
 
   // this is the function you actually call
   return function (...args) {
-    // ...args = arguments passed on each call
-    clearTimeout(timer); // cancel previous timer (safe even if undefined)
+    // ...args captures arguments: e.g. debouncedSearch('hello') → args = ['hello']
+    clearTimeout(timer); // cancel previous timer (safe even if timer is undefined)
     timer = setTimeout(() => {
-      fn(...args); // call original function with the arguments
+      fn(...args); // call original function with the same arguments
     }, delay);
   };
 }
@@ -435,68 +449,543 @@ function debounce(fn, delay) {
 // Usage
 const debouncedSearch = debounce((query) => fetchResults(query), 300);
 debouncedSearch("a"); // starts 300ms timer
-debouncedSearch("ab"); // resets timer
-debouncedSearch("abc"); // resets timer — only this fires after 300ms
+debouncedSearch("ab"); // resets timer — 'a' never fires
+debouncedSearch("abc"); // resets timer — only 'abc' fires after 300ms
 ```
 
 ---
 
-## Group by (reduce pattern)
+## Group by ✅
 
 ```javascript
 const users = [
   { name: "Alice", role: "admin" },
   { name: "Bob", role: "user" },
   { name: "Carol", role: "admin" },
+  { name: "Eve", role: "moderator" },
 ];
 
 // ❌ Hardcoded — breaks if new role appears
 const grouped = { admin: [], user: [] };
-users.forEach((u) => grouped[u.role].push(u.name));
+users.forEach((u) => grouped[u.role].push(u.name)); // 'moderator' would crash
 
 // ✅ Dynamic — works for any role
 const grouped = users.reduce((acc, u) => {
-  if (!acc[u.role]) acc[u.role] = []; // initialize if not exists
+  if (!acc[u.role]) acc[u.role] = []; // initialize array only first time
   acc[u.role].push(u.name);
   return acc;
 }, {});
-// { admin: ['Alice', 'Carol'], user: ['Bob'] }
+// { admin: ['Alice', 'Carol'], user: ['Bob'], moderator: ['Eve'] }
 ```
 
 ---
 
-# PART 7: QUICK REFERENCE
+# PART 7: QUICK REFERENCE ✅
 
 ```javascript
 // Check if value is a non-null object
 typeof value === "object" && value !== null;
 
-// Optional chaining — stops at first null/undefined
+// Optional chaining — stops at first null/undefined, returns undefined
 user?.address?.city; // undefined if address or city is null/undefined
+arr?.[0]; // safe array access
+fn?.(); // safe function call
 
-// Nullish coalescing — only falls back on null/undefined (not 0 or '')
+// Nullish coalescing — fallback ONLY on null/undefined (not 0 or '')
 value ?? "default";
 
-// Difference: ?? vs ||
-0 ?? "default"; // 0     (0 is not null/undefined)
-0 || "default"; // 'default' (0 is falsy)
+// Important difference: ?? vs ||
+0 ?? "default"; // → 0        (0 is not null/undefined)
+0 || "default"; // → 'default' (0 is falsy)
+"" ?? "default"; // → ''
+"" || "default"; // → 'default'
 
 // Delete object key
-delete obj[key]; // plain objects
-map.delete(key); // Map instances
+delete obj[key]; // ✅ plain objects
+map.delete(key); // ✅ Map instances
 
 // Merge objects
-Object.assign(target, source); // mutates target
-const merged = { ...obj1, ...obj2 }; // spread — doesn't mutate
+Object.assign(target, source); // mutates target, returns target
+const merged = { ...obj1, ...obj2 }; // spread — creates new object
 
-// Falsy values in JavaScript
+// Falsy values — all filtered out by .filter(Boolean) or if (x)
 (false, 0, "", null, undefined, NaN);
-// All of these are filtered out by filter(x => x)
 ```
 
 ---
 
-# PART 8: THEORY Q&A
+# PART 8: NEW — TypeScript Advanced ⚠️ STILL TO PRACTICE
+
+## keyof and typeof
+
+```typescript
+interface User {
+  id: number;
+  name: string;
+  role: "admin" | "user";
+}
+
+// keyof — gets union of all keys as string literals
+type UserKeys = keyof User; // 'id' | 'name' | 'role'
+
+// typeof — gets the type of a value (useful for objects/functions)
+const config = { host: "localhost", port: 3000 };
+type Config = typeof config; // { host: string, port: number }
+
+// Combining keyof + typeof — very common pattern
+function getField<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key]; // TypeScript knows exact return type
+}
+getField(user, "name"); // returns string ✅
+getField(user, "foo"); // 💥 compile error — 'foo' not in User
+```
+
+---
+
+## Conditional Types ⚠️ STILL TO PRACTICE
+
+```typescript
+// T extends X ? Y : Z — like a ternary but for types
+type IsString<T> = T extends string ? "yes" : "no";
+
+type A = IsString<string>; // 'yes'
+type B = IsString<number>; // 'no'
+
+// Real world example — unwrap Promise
+type Unwrap<T> = T extends Promise<infer U> ? U : T;
+// infer U = "extract the type inside Promise"
+
+type A = Unwrap<Promise<string>>; // string
+type B = Unwrap<number>; // number (not a Promise, returns as-is)
+```
+
+---
+
+## Mapped Types ⚠️ STILL TO PRACTICE
+
+```typescript
+// Transform every property in a type
+// [K in keyof T] — iterate over all keys of T
+
+// Make all properties readonly
+type Readonly<T> = {
+  readonly [K in keyof T]: T[K];
+};
+
+// Make all properties nullable
+type Nullable<T> = {
+  [K in keyof T]: T[K] | null;
+};
+
+// Real example — make specific keys required, rest optional
+type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+```
+
+---
+
+# PART 9: NEW — Node.js Specific ⚠️ STILL TO PRACTICE
+
+## EventEmitter pattern
+
+```javascript
+// Node.js has a built-in EventEmitter
+// It's the foundation of streams, HTTP, and most Node.js internals
+const EventEmitter = require("events");
+
+class OrderService extends EventEmitter {
+  processOrder(order) {
+    // do some work...
+    this.emit("order:processed", order); // fire event with data
+    this.emit("order:notify", order.userId);
+  }
+}
+
+const service = new OrderService();
+
+// Subscribe to events
+service.on("order:processed", (order) => {
+  console.log("Order done:", order.id);
+});
+
+service.on("order:notify", (userId) => {
+  console.log("Notify user:", userId);
+});
+
+// once() — fires only once then auto-removes
+service.once("order:processed", (order) => {
+  console.log("First order only:", order.id);
+});
+
+service.processOrder({ id: 1, userId: 42 });
+```
+
+**Why it matters:**
+
+- Foundation of Node.js streams (readable, writable)
+- HTTP server, Socket.io, most async Node.js APIs use EventEmitter
+- Useful for decoupled communication between services
+
+---
+
+## Streams ⚠️ STILL TO PRACTICE
+
+```javascript
+// Streams process data piece by piece — no need to load everything in memory
+// Use for: large files, video, CSV processing, HTTP responses
+
+const fs = require("fs");
+
+// ❌ Bad for large files — loads everything into memory
+const data = fs.readFileSync("huge-file.csv"); // may crash with 4GB file
+
+// ✅ Stream — processes chunk by chunk
+const readable = fs.createReadStream("huge-file.csv");
+readable.on("data", (chunk) => {
+  // process each chunk as it arrives
+  console.log("chunk size:", chunk.length);
+});
+readable.on("end", () => console.log("done"));
+readable.on("error", (err) => console.error(err));
+
+// Pipe — connect readable stream to writable stream
+const writable = fs.createWriteStream("output.csv");
+readable.pipe(writable); // read from file, write to another file
+
+// Transform stream — read, transform, write
+const { Transform } = require("stream");
+const upperCase = new Transform({
+  transform(chunk, encoding, callback) {
+    callback(null, chunk.toString().toUpperCase());
+  },
+});
+readable.pipe(upperCase).pipe(writable);
+```
+
+---
+
+## process.nextTick vs setImmediate vs setTimeout ⚠️ STILL TO PRACTICE
+
+```javascript
+// Execution order (important for interviews):
+console.log("1 - sync");
+
+setTimeout(() => console.log("4 - setTimeout"), 0);
+// runs in timers phase of event loop
+
+setImmediate(() => console.log("3 - setImmediate"));
+// runs in check phase — after I/O
+
+process.nextTick(() => console.log("2 - nextTick"));
+// runs BEFORE the next event loop iteration — highest priority
+
+console.log("1b - also sync");
+
+// Output order:
+// 1 - sync
+// 1b - also sync
+// 2 - nextTick      ← before event loop continues
+// 3 - setImmediate  ← check phase
+// 4 - setTimeout    ← timers phase
+```
+
+**When to use:**
+
+- `process.nextTick` — when you need to run something after current sync code but before any I/O
+- `setImmediate` — when you want to run after I/O callbacks
+- `setTimeout(fn, 0)` — similar to setImmediate but slightly later
+
+---
+
+# PART 10: NEW — Design Patterns ⚠️ STILL TO PRACTICE
+
+## Singleton
+
+```javascript
+// Singleton — only one instance exists across the entire app
+// Common use: database connections, config, loggers
+
+class Database {
+  static instance = null; // static = shared across all instances
+
+  constructor(connectionString) {
+    if (Database.instance) {
+      return Database.instance; // return existing instance
+    }
+    this.connection = connectionString;
+    Database.instance = this; // save as the single instance
+  }
+
+  query(sql) {
+    /* ... */
+  }
+}
+
+const db1 = new Database("postgres://localhost/mydb");
+const db2 = new Database("postgres://localhost/other");
+console.log(db1 === db2); // true — same instance!
+// db2 ignored the new connectionString
+```
+
+---
+
+## Repository Pattern ⚠️ STILL TO PRACTICE
+
+```typescript
+// Repository separates data access logic from business logic
+// Makes code testable — you can mock the repository in tests
+
+// Interface defines the contract
+interface UserRepository {
+  findById(id: number): Promise<User | null>;
+  findAll(): Promise<User[]>;
+  save(user: User): Promise<User>;
+  delete(id: number): Promise<void>;
+}
+
+// Real implementation — talks to database
+class PostgresUserRepository implements UserRepository {
+  async findById(id: number): Promise<User | null> {
+    return db.query("SELECT * FROM users WHERE id = $1", [id]);
+  }
+  async findAll(): Promise<User[]> {
+    return db.query("SELECT * FROM users");
+  }
+  async save(user: User): Promise<User> {
+    return db.query("INSERT INTO users...", [user]);
+  }
+  async delete(id: number): Promise<void> {
+    await db.query("DELETE FROM users WHERE id = $1", [id]);
+  }
+}
+
+// Mock for tests — no real database needed
+class InMemoryUserRepository implements UserRepository {
+  private users: User[] = [];
+  async findById(id: number) {
+    return this.users.find((u) => u.id === id) ?? null;
+  }
+  async findAll() {
+    return this.users;
+  }
+  async save(user: User) {
+    this.users.push(user);
+    return user;
+  }
+  async delete(id: number) {
+    this.users = this.users.filter((u) => u.id !== id);
+  }
+}
+
+// Service uses the interface — doesn't care which implementation
+class UserService {
+  constructor(private repo: UserRepository) {} // dependency injection
+
+  async getUser(id: number) {
+    const user = await this.repo.findById(id);
+    if (!user) throw new Error(`User ${id} not found`);
+    return user;
+  }
+}
+```
+
+---
+
+# PART 11: NEW — SQL Basics ⚠️ STILL TO PRACTICE
+
+```sql
+-- Basic SELECT
+SELECT name, email FROM users WHERE age > 18 ORDER BY name ASC;
+
+-- INNER JOIN — only rows that match in BOTH tables
+SELECT u.name, o.total
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id;
+
+-- LEFT JOIN — all users, even those with no orders
+SELECT u.name, o.total
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id;
+-- users with no orders will have o.total = NULL
+
+-- GROUP BY + HAVING (HAVING is WHERE for grouped results)
+SELECT user_id, COUNT(*) as order_count, SUM(total) as revenue
+FROM orders
+GROUP BY user_id
+HAVING SUM(total) > 1000; -- only users with >1000 revenue
+
+-- Indexes — speed up queries on columns you filter/sort by
+CREATE INDEX idx_users_email ON users(email);
+-- Without index: scans entire table O(n)
+-- With index: jumps directly to result O(log n)
+
+-- When to add index: columns in WHERE, JOIN ON, ORDER BY
+-- Trade-off: indexes speed up reads but slow down writes
+
+-- Transactions — all or nothing
+BEGIN;
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT; -- both succeed together
+-- If anything fails: ROLLBACK — neither change is applied
+```
+
+---
+
+# PART 12: NEW — System Design Concepts ⚠️ STILL TO PRACTICE
+
+## Rate Limiting
+
+```javascript
+// Rate limiting — prevent abuse by limiting requests per time window
+// Example: max 100 requests per minute per user
+
+// Simple in-memory implementation (use Redis in production)
+class RateLimiter {
+  constructor(maxRequests, windowMs) {
+    this.maxRequests = maxRequests; // e.g. 100
+    this.windowMs = windowMs; // e.g. 60000 (1 minute)
+    this.store = new Map(); // userId → { count, windowStart }
+  }
+
+  isAllowed(userId) {
+    const now = Date.now();
+    const entry = this.store.get(userId);
+
+    if (!entry || now - entry.windowStart > this.windowMs) {
+      // first request or window expired — reset
+      this.store.set(userId, { count: 1, windowStart: now });
+      return true;
+    }
+
+    if (entry.count >= this.maxRequests) {
+      return false; // limit exceeded
+    }
+
+    entry.count++;
+    return true;
+  }
+}
+
+// Express middleware usage
+const limiter = new RateLimiter(100, 60000);
+app.use((req, res, next) => {
+  if (!limiter.isAllowed(req.userId)) {
+    return res.status(429).json({ error: "Too many requests" });
+  }
+  next();
+});
+```
+
+---
+
+## Pagination — Cursor vs Offset ⚠️ STILL TO PRACTICE
+
+```javascript
+// OFFSET pagination — simple but slow on large datasets
+// Problem: if new items added, pages shift → duplicate/missing items
+GET /users?page=2&limit=10
+// SQL: SELECT * FROM users LIMIT 10 OFFSET 20
+// ❌ Slow on large tables — database scans all previous rows
+
+// CURSOR pagination — fast, stable, no duplicates
+// Cursor = pointer to last seen item (usually ID or timestamp)
+GET /users?cursor=eyJpZCI6MjB9&limit=10
+// SQL: SELECT * FROM users WHERE id > 20 LIMIT 10
+// ✅ Uses index — fast regardless of dataset size
+// ✅ Stable — new items don't shift pages
+
+// Response includes next cursor
+{
+  "data": [...],
+  "nextCursor": "eyJpZCI6MzB9", // base64 encoded { id: 30 }
+  "hasMore": true
+}
+```
+
+---
+
+## Idempotency ⚠️ STILL TO PRACTICE
+
+```javascript
+// Idempotent = calling the same operation multiple times = same result
+// Critical for payment systems, retries, distributed systems
+
+// ❌ NOT idempotent — duplicate requests = duplicate charges
+POST /payments { amount: 100, userId: 1 }
+// if called twice → charges user twice!
+
+// ✅ Idempotent — using idempotency key
+POST /payments
+Headers: { 'Idempotency-Key': 'unique-uuid-per-payment' }
+Body: { amount: 100, userId: 1 }
+// if called twice with same key → returns same result, no duplicate charge
+
+// Implementation
+async function createPayment(idempotencyKey, paymentData) {
+  // check if we've seen this key before
+  const existing = await cache.get(`payment:${idempotencyKey}`);
+  if (existing) return existing; // return cached result
+
+  // process payment
+  const result = await processPayment(paymentData);
+
+  // store result with the key (24h TTL)
+  await cache.set(`payment:${idempotencyKey}`, result, 86400000);
+  return result;
+}
+```
+
+---
+
+# PART 13: NEW — Testing Basics ⚠️ STILL TO PRACTICE
+
+```javascript
+// Jest — most common testing framework in Node.js
+
+// Unit test — test a single function in isolation
+describe("getFirstOrDefault", () => {
+  it("returns first element when array is not empty", () => {
+    expect(getFirstOrDefault([1, 2, 3], 0)).toBe(1);
+  });
+
+  it("returns default when array is empty", () => {
+    expect(getFirstOrDefault([], 0)).toBe(0);
+  });
+});
+
+// Mocking — replace real dependencies with fake ones
+// Why: tests should be fast and not need real databases/APIs
+jest.mock("./userRepository");
+
+const mockRepo = {
+  findById: jest.fn().mockResolvedValue({ id: 1, name: "Alice" }),
+  save: jest.fn().mockResolvedValue({ id: 1, name: "Alice" }),
+};
+
+describe("UserService", () => {
+  it("returns user when found", async () => {
+    const service = new UserService(mockRepo);
+    const user = await service.getUser(1);
+    expect(user.name).toBe("Alice");
+    expect(mockRepo.findById).toHaveBeenCalledWith(1); // verify mock was called
+  });
+
+  it("throws when user not found", async () => {
+    mockRepo.findById.mockResolvedValueOnce(null); // override for this test
+    const service = new UserService(mockRepo);
+    await expect(service.getUser(99)).rejects.toThrow("User 99 not found");
+  });
+});
+
+// Test types:
+// Unit — test one function, mock everything else (fast, isolated)
+// Integration — test multiple components together (real DB in test env)
+// E2E — test full flow through the system (slow, catches real bugs)
+```
+
+---
+
+# PART 14: THEORY Q&A ✅
 
 ## == vs ===
 
@@ -525,11 +1014,10 @@ function counter() {
 }
 const increment = counter();
 increment(); // 1
-increment(); // 2 — count persists even though counter() finished!
+increment(); // 2 — count persists even though counter() is done!
 ```
 
-**Real example:** `debounce` uses closure — `timer` variable
-persists between calls inside the returned function.
+**Real example:** `debounce` uses closure — `timer` persists between calls.
 
 ---
 
@@ -539,8 +1027,8 @@ A loop that runs continuously, checks the call stack and callback queue.
 If the stack is empty and there's a finished callback in the queue,
 it pushes it onto the stack.
 
-This makes Node.js **non-blocking** — while waiting for I/O (database,
-network), the event loop processes other callbacks.
+This makes Node.js **non-blocking** — while waiting for I/O,
+the event loop processes other callbacks.
 
 **Phases:**
 
@@ -555,10 +1043,6 @@ network), the event loop processes other callbacks.
 ## var vs let vs const
 
 ```javascript
-// var — function/global scoped, hoisted, can pollute global scope
-// let — block scoped, can be reassigned
-// const — block scoped, cannot be reassigned (but properties can change)
-
 if (true) {
   let x = 1; // block scoped — stays inside {}
   var y = 2; // escapes the block!
@@ -575,8 +1059,6 @@ obj = {}; // 💥 reassignment not allowed
 
 ## interface vs type in TypeScript
 
-Both disappear at compile time. Key differences:
-
 ```typescript
 // interface — supports declaration merging
 interface User {
@@ -587,39 +1069,31 @@ interface User {
 }
 // TypeScript merges them: { name, age } ✅
 
-// type — cannot be redeclared
-type User = { name: string };
-type User = { age: number }; // 💥 Error
-
-// Only type supports unions
-type ID = string | number; // ✅
-// interface ID = string | number; // 💥 not possible
+// type — cannot be redeclared, supports unions
+type ID = string | number; // ✅ only type can do this
 
 // Utility types — always use type
 type PartialUser = Partial<User>; // ✅
 ```
 
-**Rule:** `interface` for object shapes and classes. `type` for everything else.
+**Rule:** `interface` for object shapes. `type` for utility types and unions.
 
 ---
 
 ## unknown vs any
 
 ```typescript
-// any — disables TypeScript, dangerous
 let a: any = "hello";
-a.nonExistent(); // ✅ no error — TypeScript gives up
+a.nonExistent(); // ✅ no error — TypeScript gives up checking
 
-// unknown — type-safe, forces you to check type first
 let u: unknown = "hello";
-u.toUpperCase(); // 💥 Error — could be anything
+u.toUpperCase(); // 💥 Error — must check type first
 if (typeof u === "string") {
-  u.toUpperCase(); // ✅ TypeScript now knows it's a string
+  u.toUpperCase(); // ✅ TypeScript knows it's a string now
 }
 ```
 
-**Use `unknown` for:** error handling (`catch (err: unknown)`),
-external API data, user input.
+**Use `unknown` for:** `catch (err: unknown)`, external API data, user input.
 **Never use `any`** unless absolutely necessary.
 
 ---
@@ -627,148 +1101,93 @@ external API data, user input.
 ## Promise.all vs allSettled vs race vs any
 
 ```javascript
-Promise.all([p1, p2, p3]);
-// ✅ all succeed → [r1, r2, r3]
-// ❌ any fails → throws immediately (fail fast)
-// Use when: you need ALL results and any failure should abort
-
-Promise.allSettled([p1, p2, p3]);
-// always resolves with all results
-// [{ status: 'fulfilled', value }, { status: 'rejected', reason }]
-// Use when: you want results regardless of individual failures
-
-Promise.race([p1, p2, p3]);
-// resolves/rejects with FIRST to finish (success OR failure)
-// Use when: timeout patterns, first-response wins
-
-Promise.any([p1, p2, p3]);
-// resolves with FIRST success, ignores failures
-// rejects only if ALL fail
-// Use when: trying multiple sources, first success wins
+Promise.all; // fail fast — throws if any fails
+Promise.allSettled; // never throws — returns all results
+Promise.race; // first to finish wins (success OR failure)
+Promise.any; // first SUCCESS wins — throws if all fail
 ```
 
 ---
 
 ## JWT authentication
 
-JWT (JSON Web Token) encodes non-sensitive data and validates
-it server-side to persist sessions without storing state.
-
 **Structure:** `header.payload.signature`
 
-- header: algorithm (base64)
-- payload: data like userId (base64) — NOT encrypted, easily decoded!
-- signature: HMAC of header+payload with secret key
+- payload is base64 encoded — NOT encrypted, easily decoded!
+- signature uses secret key — can't be tampered with
 
-**Flow:**
+**Flow:** login → server signs JWT → client sends in every request header →
+server verifies signature → trusts payload
 
-```
-1. User logs in → server verifies credentials
-2. Server signs JWT with secret → sends to client
-3. Client stores JWT (localStorage or httpOnly cookie)
-4. Every request: Authorization: Bearer <token>
-5. Server verifies signature → trusts the payload
-```
-
-**Important:** JWT payload is base64 encoded, NOT encrypted.
-Never store passwords, credit cards, or sensitive data in JWT.
+**Never store:** passwords, credit cards, sensitive data in JWT payload.
 
 ---
 
-## Microservices — when to use
+## Microservices
 
-A separate service that can be deployed, scaled, and maintained
-independently. If it fails, it doesn't break the whole system.
+Separate services deployed independently. If one fails, others keep running.
 
-**Use microservices when:**
+**Use when:** large teams, different scaling needs, independent deployments.
+**Don't use when:** small team, simple app, no DevOps maturity.
 
-- Large teams — each team owns one service
-- Different scaling needs (payment service needs 10x more resources)
-- Independent deployment cycles
-- Different tech stacks per service
-
-**Don't use when:**
-
-- Small team or early-stage startup (too much overhead)
-- Simple application (monolith is easier)
-- No DevOps maturity (microservices need Kubernetes, CI/CD, monitoring)
-
-**From my experience at Reconomy:**
-Services communicated via SQS queues, allowing the returns processing
-service to scale independently from the rest of the system.
+**From Reconomy:** SQS queues between services — returns processing scaled
+independently from the main app.
 
 ---
 
 ## REST vs GraphQL
 
-```
-REST — multiple endpoints, HTTP methods
-GET    /users       → all users
-GET    /users/1     → one user
-POST   /users       → create
-PUT    /users/1     → update
-DELETE /users/1     → delete
+|                | REST     | GraphQL       |
+| -------------- | -------- | ------------- |
+| Endpoints      | multiple | one           |
+| Over-fetching  | yes      | no            |
+| Caching        | easy     | complex       |
+| Schema changes | easy     | risk breaking |
 
-GraphQL — single endpoint, query what you need
-POST /graphql
-query { user(id: 1) { name email } } // only fetches name and email
-```
-
-|                | REST                    | GraphQL                         |
-| -------------- | ----------------------- | ------------------------------- |
-| Endpoints      | multiple                | one                             |
-| Over-fetching  | yes (gets all fields)   | no (request only what you need) |
-| Under-fetching | yes (multiple requests) | no (one request)                |
-| Caching        | easy (HTTP cache)       | complex                         |
-| Schema changes | easy (add endpoints)    | risk of breaking changes        |
-| Learning curve | small                   | larger                          |
-
-**Use REST for:** simple CRUD, public APIs, when HTTP caching matters.
-**Use GraphQL for:** complex data, multiple client types, mobile (bandwidth).
+**REST for:** simple CRUD, public APIs.
+**GraphQL for:** complex data, multiple clients, mobile.
 
 ---
 
-# PART 9: MY EXPERIENCE — KEY STORIES
+# PART 15: MY EXPERIENCE — KEY STORIES
 
 ## AWS Lambda + Shopify (Reconomy)
 
-Deployed a Shopify app to AWS Lambda for cost, scalability, and fast cold start.
-Challenge: Shopify uses esbuild internally, and the bundling output wasn't
-compatible with Lambda's Node.js runtime.
-Worked with their architect for 2 months to fix the esbuild configuration.
+Deployed Shopify app to Lambda for cost, scalability, fast cold start.
+Challenge: Shopify uses esbuild internally — output not compatible with Lambda's Node.js runtime.
+Worked with their architect for 2 months. Fixed esbuild configuration.
 Result: stable production Shopify integration on Lambda.
 
-## SQS Microservices — Returns workflow (Reconomy)
+## SQS Microservices (Reconomy)
 
-Built SQS-based queue processing for reliable returns workflows at scale.
-Designed integration patterns for Shopify and TikTok platform APIs,
-enabling plug-and-play connectivity across enterprise systems.
+Built SQS-based queue processing for returns workflows at scale.
+Designed integration patterns for Shopify and TikTok APIs —
+plug-and-play connectivity across enterprise systems.
 
 ## React Component Library (Cognizant)
 
-Designed and published a React component library where each component
-ships as an independent npm package, consumed across multiple applications
-to ensure design consistency and reduce duplication.
+Each component ships as independent npm package.
+Consumed across multiple apps — design consistency, zero duplication.
 
 ---
 
-# PART 10: QUESTIONS TO ASK AT INTERVIEW
+# PART 16: QUESTIONS TO ASK AT INTERVIEW
 
 - What AWS services does the team use specifically?
 - How are tasks defined and estimated in the team?
 - How does onboarding look for a new contractor?
 - What does success look like after 30/60/90 days?
-- How realistic is an extension beyond 12 months?
+- How realistic is extension beyond 12 months?
 - Who will I work with day to day?
-- How is knowledge distributed — is it documented or in people's heads?
+- How is knowledge distributed — documented or in people's heads?
 
 ---
 
-# PART 11: KEY REMINDERS
+# PART 17: KEY REMINDERS
 
 ## Read requirements TWICE before coding
 
-Identify ALL requirements before writing a single line of code.
+Identify ALL requirements before writing a single line.
 30 seconds of reading saves you from missing half the exercise.
 
 ## If you don't know something
@@ -776,17 +1195,17 @@ Identify ALL requirements before writing a single line of code.
 "I haven't worked with that specifically, but I pick up new
 technologies quickly — I've demonstrated that multiple times."
 
-## If you get stuck
+## If you get stuck — think out loud
 
-Think out loud. Say what you're trying to do even if you don't
-know the exact syntax. Interviewers value your thought process.
+Say what you're trying to do even if you don't know exact syntax.
+Interviewers value thought process over perfect syntax.
 
 ## Recursion — when to reach for it
 
 - Nested structures of unknown depth
 - Tree / graph traversal
-- "Flatten" anything nested
-- When the problem can be expressed as: solve for N, then solve for N-1
+- Any "flatten" problem
+- Problem can be expressed as: solve for N, then solve for N-1
 
 ## Common mistakes to avoid
 
@@ -794,9 +1213,5 @@ know the exact syntax. Interviewers value your thought process.
 - Forgetting `return` before `await Promise.all(...)`
 - `interface X = Partial<T>` — wrong, use `type X = Partial<T>`
 - `typeof value === Object` — wrong, use `typeof value === 'object'`
-- `this.store.delete(key)` for plain objects — use `delete this.store[key]`
-- Not checking `value !== null` when checking `typeof value === 'object'`
-
-```
-
-```
+- `this.store.delete(key)` — wrong for plain objects, use `delete this.store[key]`
+- Not checking `value !== null` with `typeof value === 'object'`
