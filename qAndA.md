@@ -489,3 +489,56 @@ JWT (JSON Web Token) encodes non-sensitive data and validates
 it on the server to persist sessions.
 
 **Structure:**
+
+# HTTP Status Codes — Essential
+
+## 2xx — Success
+
+- `200 OK` — standard success (GET, PUT, PATCH)
+- `201 Created` — resource created (POST)
+- `204 No Content` — success but no body (DELETE)
+
+## 3xx — Redirect
+
+- `301 Moved Permanently` — resource moved, update your URL
+- `302 Found` — temporary redirect
+
+## 4xx — Client Error (your fault)
+
+- `400 Bad Request` — invalid input / malformed request
+- `401 Unauthorized` — not authenticated (no token or invalid token)
+- `403 Forbidden` — authenticated but no permission
+- `404 Not Found` — resource doesn't exist
+- `409 Conflict` — duplicate resource (e.g. email already exists)
+- `422 Unprocessable Entity` — valid format but failed validation
+- `429 Too Many Requests` — rate limit exceeded
+
+## 5xx — Server Error (our fault)
+
+- `500 Internal Server Error` — something crashed on the server
+- `502 Bad Gateway` — upstream service returned invalid response
+- `503 Service Unavailable` — server overloaded or down for maintenance
+
+---
+
+## Key distinctions (common interview question)
+
+**401 vs 403:**
+
+- `401` = "Who are you?" — not authenticated, send credentials
+- `403` = "I know who you are, but no." — authenticated, no permission
+
+**400 vs 422:**
+
+- `400` = malformed request (invalid JSON, missing required fields)
+- `422` = valid format but business logic validation failed
+  (e.g. end date before start date)
+
+**REST conventions:**
+
+- `POST /users` → `201 Created` + return created resource
+- `GET /users/1` → `200 OK` or `404 Not Found`
+- `PUT /users/1` → `200 OK` or `404 Not Found`
+- `DELETE /users/1` → `204 No Content`
+- Validation error → `400` or `422`
+- Auth error → `401` (no token) or `403` (no permission)
